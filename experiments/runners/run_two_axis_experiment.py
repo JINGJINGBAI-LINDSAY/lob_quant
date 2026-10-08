@@ -18,12 +18,11 @@ import torch
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import f1_score, roc_auc_score
 from torch import nn
-from torch.utils.data import DataLoader, TensorDataset
 
 from lob_mvp.cli import (
-    _purge_train_horizon, _threshold, _time_split_by_symbol,
+    _purge_train_horizon, _threshold,
 )
-from lob_mvp.core import MVPConfig, assign_labels
+from lob_mvp.core import MVPConfig
 from lob_mvp.medium_long_features import (
     MEDIUM_LONG_COLUMNS, build_medium_long,
 )
@@ -235,7 +234,6 @@ def main():
     c_opt = torch.optim.AdamW(confidence_net.parameters(), lr=1e-3,
                              weight_decay=1e-4)
     c_loss_fn = nn.BCEWithLogitsLoss()
-    Str_ds = Str
     for epoch in range(60):
         perm = torch.randperm(len(Str))
         for i in range(0, len(Str), 256):

@@ -28,7 +28,6 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import f1_score
 
 from experiments.runners.bootstrap_l2_significance import macro_f1
 from experiments.runners.run_l2_level_experiment import (
@@ -61,7 +60,7 @@ def week_arrays(path):
             "f": f[defined], "dropped": dropped}
 
 
-def fit_robust_scaler(*tensors):
+def fit_robust_scaler():
     def per(t, dim_last):
         flat = t.reshape(-1, dim_last)
         lo = torch.quantile(flat, WINSOR_Q[0], dim=0)
@@ -98,7 +97,7 @@ def build_fold(weeks, k):
     dvY = torch.tensor(labels_from(cur["f"][i56:i70], threshold))
     teY = torch.tensor(labels_from(tef, threshold))
 
-    scaler_fn = fit_robust_scaler(trL, trG)
+    scaler_fn = fit_robust_scaler()
     lsc = scaler_fn(trL, len(LEVEL_CHANNELS))
     gsc = scaler_fn(trG, len(GLOBAL_COLS))
     tr = {"L": scale(trL, lsc), "G": scale(trG, gsc), "y": trY}
@@ -122,7 +121,6 @@ def week_block_indices(n, rng):
 def paired_bootstrap(grouped):
     rng = np.random.default_rng(20261002)
     gaps = np.empty(B)
-    sizes = [len(g["y"]) for g in grouped]
     for b in range(B):
         my, mp, lp = [], [], []
         for g in grouped:

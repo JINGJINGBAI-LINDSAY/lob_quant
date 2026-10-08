@@ -24,7 +24,6 @@ import numpy as np
 import pandas as pd
 import torch
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import f1_score
 from torch import nn
 
 from experiments.runners.bootstrap_l2_significance import block_index, macro_f1

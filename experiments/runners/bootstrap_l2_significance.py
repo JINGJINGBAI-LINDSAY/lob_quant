@@ -27,7 +27,7 @@ import torch
 from sklearn.linear_model import LogisticRegression
 
 from experiments.runners.run_l2_level_experiment import (
-    FEATURES, GLOBAL_COLS, LEVEL_CHANNELS, LEVELS, SEED, WINSOR_Q,
+    FEATURES, SEED, WINSOR_Q,
     build_arrays, compress_tails, drop_warmup_frames, labels_from,
     make_windows,
 )

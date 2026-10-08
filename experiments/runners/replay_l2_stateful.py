@@ -7,6 +7,7 @@ top LEVELS. State is carried across hour files so the book stays continuous.
 from __future__ import annotations
 
 import argparse
+import heapq
 from pathlib import Path
 
 import numpy as np
@@ -48,19 +49,19 @@ def heal_crossed(bids_book, asks_book):
 
 
 def snapshot(bids_book, asks_book, bin_start):
-    if any(q > 0 for q in bids_book.values()) and \
-            any(q > 0 for q in asks_book.values()):
-        pb_now = max(p for p, q in bids_book.items() if q > 0)
-        pa_now = min(p for p, q in asks_book.items() if q > 0)
-        if pb_now >= pa_now:
-            HEAL_REMOVED.append(heal_crossed(bids_book, asks_book))
+    if not bids_book or not asks_book:
+        return None
+    pb_now = max((p for p, q in bids_book.items() if q > 0), default=None)
+    pa_now = min((p for p, q in asks_book.items() if q > 0), default=None)
+    if pb_now is None or pa_now is None:
+        return None
+    if pb_now >= pa_now:
+        HEAL_REMOVED.append(heal_crossed(bids_book, asks_book))
 
-    bid_prices = sorted(
-        (p for p, q in bids_book.items() if q > 0), reverse=True
-    )[:LEVELS]
-    ask_prices = sorted(
-        (p for p, q in asks_book.items() if q > 0)
-    )[:LEVELS]
+    bid_prices = heapq.nlargest(
+        LEVELS, (p for p, q in bids_book.items() if q > 0))
+    ask_prices = heapq.nsmallest(
+        LEVELS, (p for p, q in asks_book.items() if q > 0))
     if not bid_prices or not ask_prices:
         return None
     pb, pa = bid_prices[0], ask_prices[0]
@@ -81,7 +82,7 @@ def snapshot(bids_book, asks_book, bin_start):
     return row
 
 
-def process_file(path, bids_book, asks_book, rows, first_bin_aligned):
+def process_file(path, bids_book, asks_book, rows):
     df = pd.read_parquet(path, columns=["event_time", "side", "price", "quantity"])
     df = df.sort_values("event_time", kind="mergesort")
     times = df["event_time"].to_numpy()
@@ -137,7 +138,7 @@ def main():
     print("files", len(files), flush=True)
     bids_book, asks_book, rows = {}, {}, []
     for i, path in enumerate(files):
-        process_file(path, bids_book, asks_book, rows, i == 0)
+        process_file(path, bids_book, asks_book, rows)
         if (i + 1) % 12 == 0:
             print(f"processed {i+1}/{len(files)} files, snapshots={len(rows)}",
                   flush=True)
