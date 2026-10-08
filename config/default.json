@@ -1,0 +1,23 @@
+{
+  "levels": 20,
+  "short_events": 100,
+  "medium_bar_minutes": 5,
+  "medium_bars": 288,
+  "sample_stride": 5,
+  "short_window_hours": 1,
+  "medium_window_days": 1,
+  "long_window_days": 7,
+  "horizon": 50,
+  "epsilon": 1e-8,
+  "seed": 7,
+  "d_model": 128,
+  "n_layers": 2,
+  "n_heads": 4,
+  "d_ff": 256,
+  "dropout": 0.1,
+  "batch_size": 256,
+  "learning_rate": 0.0002,
+  "weight_decay": 0.0001,
+  "epochs": 3,
+  "train_fraction": 0.7
+}

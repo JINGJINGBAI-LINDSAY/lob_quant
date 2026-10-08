@@ -1,0 +1,8 @@
+experiment_id,raw_file,feature_file,model_output_dir,symbols,raw_event_count,depth_event_count,trade_event_count,feature_row_count,train_fraction,btc_train_rows,btc_valid_rows,btc_valid_windows,eth_train_rows,eth_valid_rows,eth_valid_windows,data_is_synthetic
+E001,artifacts/live/events_120s_real.jsonl,artifacts/live/features_120s_real.csv,artifacts/live/run_120s_real,BTCUSDT|ETHUSDT,4838,2385,2453,4738,0.8,,, ,,, ,false
+E002,artifacts/live/events_120s_real.jsonl,artifacts/live/features_120s_real.csv,artifacts/live/run_120s_weighted_norm,BTCUSDT|ETHUSDT,4838,2385,2453,4738,0.8,,, ,,, ,false
+E003,artifacts/live/events_120s_real.jsonl,artifacts/live/features_multiscale_120s.csv,artifacts/live/run_multiscale_120s,BTCUSDT|ETHUSDT,4838,2385,2453,4738,0.7,2057,515,16,1732,434,0,false
+E004,artifacts/live/events_300s_real.jsonl,artifacts/live/features_multiscale_300s.csv,artifacts/live/run_multiscale_300s,BTCUSDT|ETHUSDT,10248,, ,10148,0.7,3644,1563,1064,3458,1483,984,false
+E005,artifacts/historical/source/coinbase_l2,artifacts/historical/coinbase_7d/event_features.csv,artifacts/historical/coinbase_7d/run,BTCUSD|ETHUSD,,, ,19977,0.7,,,600,,,600,false
+E007,artifacts/historical/binance_futures_202609/raw,artifacts/historical/binance_futures_202609/event_features.csv,artifacts/historical/binance_futures_202609/recipe_20240929,BTCUSDT|ETHUSDT,67152493,161280,66991213,120940,0.7,42319,18141,1528,42319,18141,1528,false
+E008,artifacts/historical/binance_futures_202609/raw,artifacts/historical/binance_futures_202609/event_features.csv,artifacts/historical/binance_futures_202609/recipe_20240929/H1,BTCUSDT|ETHUSDT,67152493,161280,66991213,120940,0.7,42319,18141,1528,42319,18141,1528,false

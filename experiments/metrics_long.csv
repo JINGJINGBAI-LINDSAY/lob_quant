@@ -1,0 +1,87 @@
+experiment_id,scope,metric,value,interpretation
+E001,overall,macro_f1,0.2266428,Nearly equal to majority baseline; weak
+E001,overall,auc_up_vs_rest,0.5748292,Weak ranking signal
+E001,overall,ic,0.0757546,Weak positive correlation
+E001,overall,logistic_macro_f1,0.7459517,"Stronger baseline, but split was not standard"
+E002,overall,macro_f1,0.357007,Improved after weighted CE and normalization
+E002,overall,auc_up_vs_rest,0.4869332,Below random in this run
+E002,overall,ic,0.1119275,Weak positive correlation
+E002,BTCUSDT,macro_f1,0.5877645,"Better than overall, but only short data"
+E002,ETHUSDT,macro_f1,0.3116774,Weaker than BTCUSDT
+E003,overall,macro_f1,1.0,Invalid due to tiny/absent validation windows
+E003,overall,auc_up_vs_rest,,Undefined because validation labels lacked both classes
+E004,overall,macro_f1,0.3791772,Above majority baseline but below Logistic
+E004,overall,auc_up_vs_rest,0.5683391,Weak positive ranking signal
+E004,overall,ic,0.3547639,Positive correlation; needs longer out-of-sample confirmation
+E004,overall,logistic_macro_f1,0.571568,Current strongest benchmark
+E004,BTCUSDT,macro_f1,0.3879429,Similar to overall
+E004,ETHUSDT,macro_f1,0.3563022,Similar to BTCUSDT
+E005,overall,macro_f1,0.178967,Below majority and Logistic baselines
+E005,overall,auc_up_vs_rest,0.4555328,Below random ranking
+E005,overall,ic,-0.0834357,Direction score negatively correlated with future return
+E005,overall,majority_macro_f1,0.2360962,Outperformed the Transformer
+E005,overall,logistic_macro_f1,0.3399915,Strongest model in this run
+E005,BTCUSD,macro_f1,0.1709317,Weak
+E005,ETHUSD,macro_f1,0.1518967,Weak
+E006,overall,macro_f1,0.3484181,Best controlled Transformer ablation; 0.0067 below Logistic
+E006,overall,auc_up_vs_rest,0.5778262,Positive up-vs-rest ranking signal
+E006,overall,ic,0.0141985,Weak positive direction correlation
+E006,overall,majority_macro_f1,0.2187374,Transformer outperformed majority by 0.1297
+E006,overall,logistic_macro_f1,0.3551328,Still exceeds Transformer by 0.0067
+E006,BTCUSD,macro_f1,0.2611539,Below overall; residual cross-symbol instability
+E006,ETHUSD,macro_f1,0.3630248,Slightly above overall and Logistic aggregate
+E007,overall,macro_f1,0.4310414,Best Transformer run L1; below Logistic by 0.0179
+E007,overall,auc_up_vs_rest,0.5821479,Positive ranking signal
+E007,overall,ic,0.00593,Positive but weak direction correlation
+E007,overall,majority_macro_f1,0.2818285,Best Transformer exceeded majority by 0.1515
+E007,overall,logistic_macro_f1,0.448955,Strongest model; retained as baseline
+E007,overall,full_gated_macro_f1,0.396603,G2 improved over plain three-branch fusion but not short-only L1
+E007,BTCUSDT,macro_f1,0.3681725,L1 performance was weaker on BTCUSDT
+E007,ETHUSDT,macro_f1,0.4408582,L1 performance was close to aggregate Logistic
+E008,overall,macro_f1,0.4574215,H1 exceeded Logistic by 0.0084665 on the identical purged split
+E008,overall,auc_up_vs_rest,0.5457886,Above the 0.5 qualification threshold
+E008,overall,ic,0.0432515,Positive direction correlation
+E008,overall,neutral_f1,0.8156898,Neutral class remained active and improved over Logistic
+E008,overall,logistic_macro_f1,0.448955,Fixed comparison baseline
+E008,BTCUSDT,macro_f1,0.4539942,Hybrid performance on BTCUSDT
+E008,ETHUSDT,macro_f1,0.4504546,Hybrid performance on ETHUSDT
+E009,overall,best_standalone_xgb_ovr_macro_f1,0.4542,Best non-logistic model; effective tie with Logistic 0.4543
+E009,overall,faithful_three_branch_macro_f1,0.394,Section 7 architecture: volume bars + 168 hour bars; below Logistic
+E009,overall,wide_deep_macro_f1,0.397,Joint transformer + last-event residual; below Logistic
+E009,overall,xgb_classifier_macro_f1,0.4456,Three-class XGB on temporal features; below Logistic
+E010,overall,enhanced_three_branch_best_test_f1,0.4339,"FiLM/cross-attn + dilated conv; best E2, below Logistic 0.4476"
+E010,overall,latent_linear_probe_test_f1,0.3101,128-d z_t separable by linear model
+E010,overall,latent_linear_probe_test_auc,0.6732,z_t carries directional ranking signal
+E010,overall,latent_knn_test_f1,0.3123,local label stability moderate
+E010,overall,latent_cluster_purity,0.8374,clusters dominated by neutral class
+E010,overall,latent_cluster_ari,0.0751,z_t does not cluster cleanly into 3 directions
+E010,overall,latent_norm_return_spread,5.04e-05,high z-norm -> higher directional future return
+E011,overall,extended_transformer_test_f1,0.4201,standalone model beats logistic on longer data
+E011,overall,extended_logistic_test_f1,0.4083,baseline on earlier test window
+E011,overall,extended_transformer_test_auc,0.4779,below 0.5; conflicts with positive IC - caution
+E011,overall,extended_transformer_test_ic,0.025,positive direction correlation
+E011,overall,traded_alpha_ic,-0.02,z_t signal not profitable after costs
+E012,overall,regime_mixture_transformer_test_f1,0.32,dual-head mixture over slow signals collapsed to neutral; failed
+E012,overall,regime_mixture_gate_mean,0.329,gate favored reversion but branches non-discriminative
+E013,overall,pure_short_transformer_test_f1,0.439,dilated conv5 short model; largest clean beat over logistic 0.4127
+E013,overall,fusion_transformer_test_f1,0.4269,adding reversion/continuation slow priors hurt F1 by 0.012
+E013,overall,fusion_vs_pure_delta,-0.0121,slow context makes model collapse toward neutral; not for classification
+E014,overall,two_axis_all_test_f1,0.4459,conv5 + time + feature-axis attention; beats logistic by 0.033
+E014,overall,two_axis_selective_f1,0.4232,F1 lower after filtering due to class-balance change
+E014,overall,two_axis_selective_auc,0.588,slow confidence filter lifts ranking quality strongly
+E014,overall,two_axis_selective_ic,0.018,3x IC on high-confidence 28% subset; 72% flat
+E015,sample1h,l2_level1_imbalance_rankic,-0.568,raw multi-level L2 carries much stronger reversal than pct buckets
+E015,sample1h,l2_spread_rankic,-0.488,spread widening reverts
+E015,sample1h,l2_naive_qty_rankic,-0.218,price-distance info doubles signal strength
+E017,overall,macro_f1,0.3574,Level model all predictions
+E017,overall,auc_up_vs_rest,0.5402,Barely above chance
+E017,overall,ic,0.0228,Weak but positive
+E017,vs_logistic,gap,0.0543,"Point gap, not significant"
+E017,bootstrap_iid,ci95,-0.016..0.124,Crosses 0
+E017,bootstrap_iid,p_gap_gt_0,0.937,Suggestive
+E017,bootstrap_block,ci95,-0.049..0.152,"Conservative, crosses 0"
+E017,bootstrap_block,p_gap_gt_0,0.838,Suggestive not significant
+E017,selective_margin,auc,0.453,Margin gating harmful here
+E018,overall,macro_f1,0.3105,Transfer worse than scratch
+E018,vs_logistic,gap,0.0074,Essentially tied
+E018,bootstrap_block,p_gap_gt_0,0.548,Coin-flip; negative transfer

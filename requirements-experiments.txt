@@ -1,0 +1,10 @@
+# Match the versions used for the historical Logistic benchmark (Python 3.9).
+numpy==2.0.2
+scipy==1.13.1
+pandas==2.3.3
+scikit-learn==1.6.1
+torch==2.8.0
+pyarrow==20.0.0
+websockets==13.1
+pytest==8.4.2
+xgboost==2.1.4

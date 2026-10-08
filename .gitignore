@@ -1,0 +1,15 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# Virtual environments
+.venv/
+venv/
+
+# Data & experiment artifacts (large, kept on disk but not versioned)
+artifacts/
+
+# OS
+.DS_Store
