@@ -51,17 +51,14 @@ def heal_crossed(bids_book, asks_book):
 def snapshot(bids_book, asks_book, bin_start):
     if not bids_book or not asks_book:
         return None
-    pb_now = max((p for p, q in bids_book.items() if q > 0), default=None)
-    pa_now = min((p for p, q in asks_book.items() if q > 0), default=None)
-    if pb_now is None or pa_now is None:
-        return None
-    if pb_now >= pa_now:
+    # Single scan per side: take top LEVELS, detect crossed from the tops and
+    # only then heal (rare) and recompute. All dict entries have qty > 0.
+    bid_prices = heapq.nlargest(LEVELS, bids_book)
+    ask_prices = heapq.nsmallest(LEVELS, asks_book)
+    if bid_prices and ask_prices and bid_prices[0] >= ask_prices[0]:
         HEAL_REMOVED.append(heal_crossed(bids_book, asks_book))
-
-    bid_prices = heapq.nlargest(
-        LEVELS, (p for p, q in bids_book.items() if q > 0))
-    ask_prices = heapq.nsmallest(
-        LEVELS, (p for p, q in asks_book.items() if q > 0))
+        bid_prices = heapq.nlargest(LEVELS, bids_book)
+        ask_prices = heapq.nsmallest(LEVELS, asks_book)
     if not bid_prices or not ask_prices:
         return None
     pb, pa = bid_prices[0], ask_prices[0]
@@ -112,6 +109,68 @@ def process_file(path, bids_book, asks_book, rows):
             book.pop(price, None)
 
 
+def _apply_bin_groups(book, groups, b):
+    gp = groups.get(b)
+    if gp is None:
+        return
+    pos = gp.loc[gp["qty"] > 0]
+    if len(pos):
+        book.update(zip(pos["price"].tolist(), pos["qty"].tolist()))
+    for p in gp.loc[gp["qty"] == 0, "price"].tolist():
+        book.pop(p, None)
+
+
+def process_file_vec(path, bids_book, asks_book, rows, state=None):
+    """Vectorized replay producing identical state to the per-event loop.
+
+    Two facts let us avoid the per-event Python loop:
+      * an update at a price REPLACES the quantity (never accumulates), so
+        within one 30s bin only the LAST update per (bin, side, price) can
+        matter -> reduce the hour in C and bulk-merge each bin;
+      * a frame for bin b is emitted in the event loop only when the first
+        later event (bin > b) crosses the boundary. We therefore hold the
+        latest frame pending (`state`) and flush it only when a strictly
+        later bin appears. Events from a new file that land on an earlier
+        bin refresh the pending frame, and the final bin with no follower
+        is never emitted -- exactly the loop's behaviour.
+
+    `state` carries the pending frame across hour files.
+    """
+    if state is None:
+        state = {"bin": None, "row": None}
+    df = pd.read_parquet(path, columns=["event_time", "side", "price", "quantity"])
+    df = df.sort_values("event_time", kind="mergesort")
+    df["price"] = pd.to_numeric(df["price"], errors="coerce")
+    df = df.dropna(subset=["price"])
+    df["qty"] = pd.to_numeric(df["quantity"], errors="coerce").fillna(0.0)
+    df["bin"] = df["event_time"].astype("int64") // BIN_MS
+
+    last = df.drop_duplicates(subset=["bin", "side", "price"], keep="last")
+    bid_groups = {b: gp[["price", "qty"]] for b, gp in
+                  last.loc[last["side"] == "bid"].groupby("bin", sort=True)}
+    ask_groups = {b: gp[["price", "qty"]] for b, gp in
+                  last.loc[last["side"] == "ask"].groupby("bin", sort=True)}
+
+    first_bin = int(df["bin"].iloc[0])
+    last_bin = int(df["bin"].iloc[-1])
+    for b in range(first_bin, last_bin + 1):
+        # A strictly later bin triggers the pending boundary frame, which is
+        # emitted before applying the new bin's updates.
+        if state["bin"] is not None and b > state["bin"]:
+            if state["row"] is not None:
+                rows.append(state["row"])
+            state["bin"], state["row"] = None, None
+        _apply_bin_groups(bids_book, bid_groups, b)
+        _apply_bin_groups(asks_book, ask_groups, b)
+        if state["bin"] is None:
+            # Most advanced bin seen: this frame is now pending.
+            state["bin"], state["row"] = b, snapshot(bids_book, asks_book, b * BIN_MS)
+        else:
+            # Late event on an earlier, not-yet-flushed bin: the pending
+            # boundary frame must reflect it.
+            state["row"] = snapshot(bids_book, asks_book, state["bin"] * BIN_MS)
+
+
 def add_imbalance_and_ofi(frames):
     for i in range(LEVELS):
         b, a = frames[f"bid_qty_{i}"], frames[f"ask_qty_{i}"]
@@ -132,13 +191,20 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--src", default=str(SRC))
     parser.add_argument("--out", default=str(OUT))
+    parser.add_argument("--engine", choices=("loop", "vec"), default="vec",
+                        help="per-event loop or exact vectorized replay")
     args = parser.parse_args()
     src, out = Path(args.src), Path(args.out)
     files = sorted(src.glob("*/*/BTCUSDT_orderbook.parquet"))
-    print("files", len(files), flush=True)
+    print("files", len(files), "engine", args.engine, flush=True)
+    process = process_file if args.engine == "loop" else process_file_vec
     bids_book, asks_book, rows = {}, {}, []
+    pending = {"bin": None, "row": None}
     for i, path in enumerate(files):
-        process_file(path, bids_book, asks_book, rows)
+        if args.engine == "vec":
+            process(path, bids_book, asks_book, rows, pending)
+        else:
+            process(path, bids_book, asks_book, rows)
         if (i + 1) % 12 == 0:
             print(f"processed {i+1}/{len(files)} files, snapshots={len(rows)}",
                   flush=True)

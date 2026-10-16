@@ -86,9 +86,26 @@ class FeatureAxisAttention(nn.Module):
 
 
 class TwoAxisLOB(nn.Module):
+    """Two-axis model with optional causal masking and dual readout.
+
+    Variants for the E020 ablation (defaults reproduce the original model):
+      * original: causal_mask=False, dual_readout=False
+      * B:        causal_mask=True,  dual_readout=False  (mask + attention pool)
+      * C:        causal_mask=True,  dual_readout=True   (mask + last/pool fuse)
+
+    `causal_mask` upper-triangular mask blocks each frame from attending to
+    later frames, so the time-axis attention (bidirectional by default in
+    nn.TransformerEncoder) cannot see the future. `dual_readout` concatenates
+    the attention-pooled summary with the LAST frame's vector and projects
+    back to d_model, giving both global context and the latest instant.
+    """
+
     def __init__(self, event_dim, d_model=64, layers=2, heads=4,
-                 d_ff=128, dropout=0.2, feature_groups=8):
+                 d_ff=128, dropout=0.2, feature_groups=8,
+                 causal_mask=False, dual_readout=False):
         super().__init__()
+        self.causal_mask = causal_mask
+        self.dual_readout = dual_readout
         self.proj = nn.Sequential(
             nn.Linear(event_dim, d_model), nn.LayerNorm(d_model), nn.GELU(),
             nn.Dropout(dropout),
@@ -101,7 +118,17 @@ class TwoAxisLOB(nn.Module):
             norm_first=True, activation="gelu",
         )
         self.time_encoder = nn.TransformerEncoder(layer, layers)
+        # Boolean additive mask: True = "may not attend". Row t may see
+        # frames 0..t only (diagonal is False), so no row is fully masked.
+        self.register_buffer(
+            "causal_attn_mask",
+            torch.triu(torch.ones(TOKENS, TOKENS, dtype=torch.bool),
+                       diagonal=1),
+            persistent=False,
+        )
         self.pool = AttentionPool(d_model)
+        if dual_readout:
+            self.fuse = nn.Linear(2 * d_model, d_model)
         self.pre_feature_norm = nn.LayerNorm(d_model)
         self.feature_attention = FeatureAxisAttention(
             d_model, groups=feature_groups, heads=heads, dropout=dropout
@@ -114,8 +141,14 @@ class TwoAxisLOB(nn.Module):
     def forward(self, events):
         h = self.proj(events)
         h = self.conv(h) + self.pos
-        z = self.time_encoder(h)
-        q, time_weights = self.pool(z)
+        z = self.time_encoder(
+            h, mask=self.causal_attn_mask if self.causal_mask else None
+        )
+        q_attn, time_weights = self.pool(z)
+        if self.dual_readout:
+            q = self.fuse(torch.cat([q_attn, z[:, -1, :]], dim=-1))
+        else:
+            q = q_attn
         q = self.pre_feature_norm(q)
         q = self.feature_attention(q)
         return self.head(q), q, time_weights

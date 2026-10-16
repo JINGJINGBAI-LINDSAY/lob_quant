@@ -125,6 +125,15 @@ def _read_depth(path: Path) -> pd.DataFrame:
         values=["depth", "notional"],
         aggfunc="last",
     )
+    # Binance only added the +/-0.2 buckets on 2026-01-15; earlier days lack
+    # those columns. Reindex to the full schema so missing levels become NaN
+    # instead of raising KeyError (callers may simply exclude 0p2 features).
+    percentages = [percentage for percentage, _ in BUCKETS]
+    pivot = pivot.reindex(
+        columns=pd.MultiIndex.from_product(
+            [("depth", "notional"), percentages]
+        )
+    )
     rows = pd.DataFrame(index=pivot.index)
     for percentage, label in BUCKETS:
         side = "bid" if percentage < 0 else "ask"

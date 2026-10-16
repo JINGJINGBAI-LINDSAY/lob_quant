@@ -208,7 +208,8 @@ def prepare_l2_dataset():
 
 
 def train_direction_model(model, tr, dv, lr=3e-4, epochs=24, verbose=True,
-                          weight_power=CLASS_WEIGHT_POWER):
+                          weight_power=CLASS_WEIGHT_POWER, patience=10,
+                          batch_size=128):
     """Train a direction model, select checkpoint on dev Macro-F1.
 
     Loads the best checkpoint back into `model` and returns best_epoch.
@@ -219,7 +220,7 @@ def train_direction_model(model, tr, dv, lr=3e-4, epochs=24, verbose=True,
     class_weights = (counts.sum() / (3 * counts.clamp_min(1))).pow(weight_power)
     loss_fn = nn.CrossEntropyLoss(weight=class_weights, label_smoothing=0.0)
     opt = torch.optim.AdamW(model.parameters(), lr=lr, weight_decay=0.02)
-    bs = 128
+    bs = batch_size
     total = epochs * math.ceil(len(tr["L"]) / bs)
     sched = torch.optim.lr_scheduler.LambdaLR(
         opt, lambda st: warmup_cosine(st, total)
@@ -255,7 +256,7 @@ def train_direction_model(model, tr, dv, lr=3e-4, epochs=24, verbose=True,
             since += 1
         if verbose:
             print(epoch + 1, f"dev_f1={dev_f1:.4f}", flush=True)
-        if since >= 8:
+        if since >= patience:
             break
     model.load_state_dict(best["state"])
     return best["epoch"]

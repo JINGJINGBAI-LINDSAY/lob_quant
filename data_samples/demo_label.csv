@@ -1,0 +1,2 @@
+sample,window_start_utc,window_end_utc,future_5m_return_bps,threshold_bps,label_y
+100,2026-09-24 08:20:00+00:00,2026-09-24 09:19:30+00:00,-5.76,4.23,0

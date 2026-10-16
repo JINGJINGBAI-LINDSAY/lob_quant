@@ -1,15 +1,25 @@
-# Python
+# ---- 本地 IDE / 工具产物 ----
+.trae/
+.trae-html-share-packages/
+.DS_Store
+
+# ---- 临时 / 中间产物 ----
+_tlob_extract/
+.tmp_*.svg
+baijj_doc.json
+
+# ---- 数据与实验产物（体积大，不入库）----
+artifacts/
+data/
+*.parquet
+*.h5
+*.npy
+*.npz
+
+# ---- Python ----
 __pycache__/
 *.py[cod]
 *.egg-info/
-.pytest_cache/
-
-# Virtual environments
 .venv/
 venv/
-
-# Data & experiment artifacts (large, kept on disk but not versioned)
-artifacts/
-
-# OS
-.DS_Store
+.ipynb_checkpoints/

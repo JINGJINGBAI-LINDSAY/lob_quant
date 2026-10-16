@@ -41,10 +41,18 @@ from lob_mvp.two_axis_model import LevelStructuredLOB
 B = 20_000
 BLOCK = 10
 WEEKS = [
+    ("2026-04-23", Path("artifacts/historical/l2_weeks_features/2026-04-23/l2_30s_features.parquet")),
     ("2026-05-07", Path("artifacts/historical/l2_weeks_features/2026-05-07/l2_30s_features.parquet")),
+    ("2026-05-21", Path("artifacts/historical/l2_weeks_features/2026-05-21/l2_30s_features.parquet")),
     ("2026-06-04", Path("artifacts/historical/l2_weeks_features/2026-06-04/l2_30s_features.parquet")),
+    ("2026-06-18", Path("artifacts/historical/l2_weeks_features/2026-06-18/l2_30s_features.parquet")),
     ("2026-07-02", Path("artifacts/historical/l2_weeks_features/2026-07-02/l2_30s_features.parquet")),
+    ("2026-07-16", Path("artifacts/historical/l2_weeks_features/2026-07-16/l2_30s_features.parquet")),
+    ("2026-07-30", Path("artifacts/historical/l2_weeks_features/2026-07-30/l2_30s_features.parquet")),
+    ("2026-08-13", Path("artifacts/historical/l2_weeks_features/2026-08-13/l2_30s_features.parquet")),
     ("2026-08-27", Path("artifacts/historical/l2_btc_week_features/l2_30s_features.parquet")),
+    ("2026-09-10", Path("artifacts/historical/l2_weeks_features/2026-09-10/l2_30s_features.parquet")),
+    ("2026-09-24", Path("artifacts/historical/l2_weeks_features/2026-09-24/l2_30s_features.parquet")),
 ]
 OUTPUT = Path("artifacts/historical/l2_multiweek_expanding")
 
@@ -63,8 +71,17 @@ def week_arrays(path):
 def fit_robust_scaler():
     def per(t, dim_last):
         flat = t.reshape(-1, dim_last)
-        lo = torch.quantile(flat, WINSOR_Q[0], dim=0)
-        hi = torch.quantile(flat, WINSOR_Q[1], dim=0)
+        # torch.quantile sorts and needs large workspaces; on the biggest
+        # expanding folds the flattened tensor is too large. Windows overlap
+        # heavily, so uniformly subsampling rows gives essentially identical
+        # quantiles while bounding memory.
+        rows = flat.shape[0]
+        sample = flat
+        if rows > 200_000:
+            step = int(np.ceil(rows / 200_000))
+            sample = flat[::step]
+        lo = torch.quantile(sample, WINSOR_Q[0], dim=0)
+        hi = torch.quantile(sample, WINSOR_Q[1], dim=0)
         clipped = torch.clamp(flat, lo, hi)
         return lo, hi, clipped.mean(0), clipped.std(0).clamp_min(1e-6)
     return per
@@ -79,7 +96,7 @@ def flat_last(L, G):
     return torch.cat([L[:, -1].reshape(len(L), -1), G[:, -1]], dim=1).numpy()
 
 
-def build_fold(weeks, k):
+def build_fold(weeks, k, train_stride=1):
     cur = weeks[k]
     n = len(cur["L"])
     i70, i56 = int(n * 0.70), int(n * 0.56)
@@ -88,6 +105,11 @@ def build_fold(weeks, k):
     tr_f = [w["f"] for w in weeks[:k]] + [cur["f"][:i56]]
     trL, trG = torch.cat(tr_L), torch.cat(tr_G)
     trf = np.concatenate(tr_f)
+    # Optional TRAIN-only density reduction: windows overlap ~92%, so stride on
+    # the training set removes little independent information. Dev/test frames
+    # below are never touched, and the Logistic baseline uses the same sample.
+    if train_stride > 1:
+        trL, trG, trf = trL[::train_stride], trG[::train_stride], trf[::train_stride]
     dvL, dvG = cur["L"][i56:i70], cur["G"][i56:i70]
     teL, teG = cur["L"][i70:], cur["G"][i70:]
     tef = cur["f"][i70:]
